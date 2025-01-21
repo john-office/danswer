@@ -1,6 +1,6 @@
 import { Quote } from "@/lib/search/interfaces";
 import { ResponseSection, StatusOptions } from "./ResponseSection";
-import ReactMarkdown from "react-markdown";
+import { MinimalMarkdown } from "@/components/chat_search/MinimalMarkdown";
 
 const TEMP_STRING = "__$%^TEMP$%^__";
 
@@ -25,59 +25,36 @@ interface AnswerSectionProps {
   answer: string | null;
   quotes: Quote[] | null;
   error: string | null;
-  nonAnswerableReason: string | null;
   isFetching: boolean;
 }
 
-const AnswerHeader = ({
-  answer,
-  error,
-  quotes,
-  nonAnswerableReason,
-  isFetching,
-}: AnswerSectionProps) => {
-  if (error) {
-    return <>Error while building answer</>;
-  } else if ((answer && quotes !== null) || !isFetching) {
-    if (nonAnswerableReason) {
-      return <>Best effort AI answer</>;
-    }
-    return <>AI answer</>;
-  }
-  if (nonAnswerableReason) {
-    return <>Building best effort AI answer...</>;
-  }
-  return <>Building answer...</>;
-};
-
-const AnswerBody = ({ answer, error, isFetching }: AnswerSectionProps) => {
-  if (error) {
-    return (
-      <div className="flex">
-        <div className="text-error my-auto ml-1">{error}</div>
-      </div>
-    );
-  } else if (answer) {
-    return (
-      <ReactMarkdown className="prose text-sm max-w-full">
-        {replaceNewlines(answer)}
-      </ReactMarkdown>
-    );
-  } else if (!isFetching) {
-    return <div>Information not found</div>;
-  }
-
-  return null;
-};
-
 export const AnswerSection = (props: AnswerSectionProps) => {
   let status = "in-progress" as StatusOptions;
-  if (props.error) {
-    status = "failed";
-  } else if (props.nonAnswerableReason) {
-    status = "warning";
-  } else if ((props.quotes !== null && props.answer) || !props.isFetching) {
+  let header = <></>;
+  let body = null;
+
+  // finished answer
+  if (props.quotes !== null || !props.isFetching) {
     status = "success";
+    header = <></>;
+
+    body = <MinimalMarkdown content={replaceNewlines(props.answer || "")} />;
+
+    // error while building answer (NOTE: if error occurs during quote generation
+    // the above if statement will hit and the error will not be displayed)
+  } else if (props.error) {
+    status = "failed";
+    header = <>Error while building answer</>;
+    body = (
+      <div className="flex">
+        <div className="text-error my-auto ml-1">{props.error}</div>
+      </div>
+    );
+    // answer is streaming
+  } else if (props.answer) {
+    status = "success";
+    header = <></>;
+    body = <MinimalMarkdown content={replaceNewlines(props.answer)} />;
   }
 
   return (
@@ -85,23 +62,10 @@ export const AnswerSection = (props: AnswerSectionProps) => {
       status={status}
       header={
         <div className="flex">
-          <div className="ml-2 text-strong">{<AnswerHeader {...props} />}</div>
+          <div className="ml-2 text-strong">{header}</div>
         </div>
       }
-      body={
-        <div className="">
-          <AnswerBody {...props} />
-          {props.nonAnswerableReason && !props.isFetching && (
-            <div className="mt-4 text-sm">
-              <b className="font-medium">Warning:</b> the AI did not think this
-              question was answerable.{" "}
-              <div className="italic mt-1 ml-2">
-                {props.nonAnswerableReason}
-              </div>
-            </div>
-          )}
-        </div>
-      }
+      body={<div className="">{body}</div>}
       desiredOpenStatus={true}
       isNotControllable={true}
     />
