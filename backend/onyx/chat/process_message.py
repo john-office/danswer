@@ -14,6 +14,7 @@ from onyx.agents.agent_search.orchestration.nodes.call_tool import ToolCallExcep
 from onyx.chat.answer import Answer
 from onyx.chat.chat_utils import create_chat_chain
 from onyx.chat.chat_utils import create_temporary_persona
+from onyx.chat.chat_utils import process_kg_commands
 from onyx.chat.models import AgenticMessageResponseIDInfo
 from onyx.chat.models import AgentMessageIDInfo
 from onyx.chat.models import AgentSearchPacket
@@ -96,6 +97,7 @@ from onyx.file_store.models import FileDescriptor
 from onyx.file_store.models import InMemoryChatFile
 from onyx.file_store.utils import load_all_chat_files
 from onyx.file_store.utils import save_files
+from onyx.kg.models import KGException
 from onyx.llm.exceptions import GenAIDisabledException
 from onyx.llm.factory import get_llms_for_persona
 from onyx.llm.factory import get_main_llm_from_tuple
@@ -589,6 +591,9 @@ def stream_chat_message_objects(
             default_persona=chat_session.persona,
         )
 
+        # TODO: remove once we have an endpoint for this stuff
+        process_kg_commands(new_msg_req.message, persona.name, tenant_id, db_session)
+
         multi_assistant_milestone, _is_new = create_milestone_if_not_exists(
             user=user,
             event_type=MilestoneRecordType.MULTIPLE_ASSISTANTS,
@@ -1052,6 +1057,10 @@ def stream_chat_message_objects(
         yield StreamingError(error=error_msg)
         db_session.rollback()
         return
+
+    # TODO: remove after moving kg stuff to api endpoint
+    except KGException:
+        raise
 
     except Exception as e:
         logger.exception(f"Failed to process chat message due to {e}")

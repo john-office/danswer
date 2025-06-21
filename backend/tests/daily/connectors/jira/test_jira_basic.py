@@ -55,7 +55,7 @@ def test_jira_connector_basic(
 
     # Check task
     assert story.id == "https://danswerai.atlassian.net/browse/AS-3"
-    assert story.semantic_identifier == "AS-3: test123small"
+    assert story.semantic_identifier == "AS-3: Magic Answers"
     assert story.source == DocumentSource.JIRA
     assert story.metadata == {
         "priority": "Medium",
@@ -71,16 +71,20 @@ def test_jira_connector_basic(
         "project_name": "DailyConnectorTestProject",
         "project": "AS",
         "parent": "AS-4",
-        "updated": "2025-05-29T15:33:31.085-0700",
+        "key": "AS-3",
+        "updated": "2025-06-17T12:13:00.070-0700",
     }
     assert story.secondary_owners is None
-    assert story.title == "AS-3 test123small"
+    assert story.title == "AS-3 Magic Answers"
     assert story.from_ingestion_api is False
     assert story.additional_info is None
 
     assert len(story.sections) == 1
     section = story.sections[0]
-    assert section.text == "example_text\n"
+    assert (
+        section.text
+        == "This is a critical request for super-human answer quality in Onyx! We need magic!\n"
+    )
     assert section.link == "https://danswerai.atlassian.net/browse/AS-3"
 
     # Check epic
@@ -98,6 +102,7 @@ def test_jira_connector_basic(
         "assignee_email": "chris@onyx.app",
         "project_name": "DailyConnectorTestProject",
         "project": "AS",
+        "key": "AS-4",
         "updated": "2025-05-29T14:43:05.312-0700",
     }
     assert epic.secondary_owners is None

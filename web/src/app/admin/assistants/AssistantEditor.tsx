@@ -14,11 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { ArrayHelpers, FieldArray, Form, Formik, FormikProps } from "formik";
 
-import {
-  BooleanFormField,
-  Label,
-  TextFormField,
-} from "@/components/admin/connectors/Field";
+import { BooleanFormField, Label, TextFormField } from "@/components/Field";
 
 import { usePopup } from "@/components/admin/connectors/Popup";
 import { getDisplayNameForModel, useLabels } from "@/lib/hooks";
@@ -532,7 +528,7 @@ export function AssistantEditor({
 
           // if disable_retrieval is set, set num_chunks to 0
           // to tell the backend to not fetch any documents
-          const numChunks = searchToolEnabled ? values.num_chunks || 10 : 0;
+          const numChunks = searchToolEnabled ? values.num_chunks || 25 : 0;
           const starterMessages = values.starter_messages
             .filter(
               (message: { message: string }) => message.message.trim() !== ""
