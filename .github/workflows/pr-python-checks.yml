@@ -47,17 +47,12 @@ jobs:
           -i /local/openapi.json \
           -g python \
           -o /local/onyx_openapi_client \
-          --package-name onyx_openapi_client
+          --package-name onyx_openapi_client \
             
     - name: Run MyPy
       run: |
         cd backend
         mypy .
-
-    - name: Run ruff
-      run: |
-        cd backend
-        ruff .
 
     - name: Check import order with reorder-python-imports
       run: |

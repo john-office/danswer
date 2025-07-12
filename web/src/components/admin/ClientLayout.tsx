@@ -21,6 +21,7 @@ import {
   AssistantsIconSkeleton,
   SearchIcon,
   DocumentIcon2,
+  BrainIcon,
 } from "@/components/icons/icons";
 import { UserRole } from "@/lib/types";
 import { FiActivity, FiBarChart2 } from "react-icons/fi";
@@ -39,116 +40,134 @@ import {
 } from "@/app/admin/settings/interfaces";
 import Link from "next/link";
 import { Button } from "../ui/button";
+import useSWR from "swr";
+import { errorHandlingFetcher } from "@/lib/fetcher";
+import { useIsKGExposed } from "@/app/admin/kg/utils";
+import { useFederatedOAuthStatus } from "@/lib/hooks/useFederatedOAuthStatus";
+
+const connectors_items = () => [
+  {
+    name: (
+      <div className="flex">
+        <NotebookIconSkeleton className="text-text-700" size={18} />
+        <div className="ml-1">Existing Connectors</div>
+      </div>
+    ),
+    link: "/admin/indexing/status",
+  },
+  {
+    name: (
+      <div className="flex">
+        <ConnectorIconSkeleton className="text-text-700" size={18} />
+        <div className="ml-1.5">Add Connector</div>
+      </div>
+    ),
+    link: "/admin/add-connector",
+  },
+];
+
+const document_management_items = () => [
+  {
+    name: (
+      <div className="flex">
+        <DocumentSetIconSkeleton className="text-text-700" size={18} />
+        <div className="ml-1">Document Sets</div>
+      </div>
+    ),
+    link: "/admin/documents/sets",
+  },
+  {
+    name: (
+      <div className="flex">
+        <ZoomInIconSkeleton className="text-text-700" size={18} />
+        <div className="ml-1">Explorer</div>
+      </div>
+    ),
+    link: "/admin/documents/explorer",
+  },
+  {
+    name: (
+      <div className="flex">
+        <ThumbsUpIconSkeleton className="text-text-700" size={18} />
+        <div className="ml-1">Feedback</div>
+      </div>
+    ),
+    link: "/admin/documents/feedback",
+  },
+];
+
+const custom_assistants_items = (
+  isCurator: boolean,
+  enableEnterprise: boolean
+) => {
+  const items = [
+    {
+      name: (
+        <div className="flex">
+          <AssistantsIconSkeleton className="text-text-700" size={18} />
+          <div className="ml-1">Assistants</div>
+        </div>
+      ),
+      link: "/admin/assistants",
+    },
+  ];
+
+  if (!isCurator) {
+    items.push(
+      {
+        name: (
+          <div className="flex">
+            <SlackIconSkeleton className="text-text-700" />
+            <div className="ml-1">Slack Bots</div>
+          </div>
+        ),
+        link: "/admin/bots",
+      },
+      {
+        name: (
+          <div className="flex">
+            <ToolIconSkeleton className="text-text-700" size={18} />
+            <div className="ml-1">Actions</div>
+          </div>
+        ),
+        link: "/admin/actions",
+      }
+    );
+  }
+
+  if (enableEnterprise) {
+    items.push({
+      name: (
+        <div className="flex">
+          <ClipboardIcon className="text-text-700" size={18} />
+          <div className="ml-1">Standard Answers</div>
+        </div>
+      ),
+      link: "/admin/standard-answer",
+    });
+  }
+
+  return items;
+};
 
 const collections = (
   isCurator: boolean,
   enableCloud: boolean,
   enableEnterprise: boolean,
-  settings: CombinedSettings | null
+  settings: CombinedSettings | null,
+  kgExposed: boolean
 ) => [
   {
     name: "Connectors",
-    items: [
-      {
-        name: (
-          <div className="flex">
-            <NotebookIconSkeleton className="text-text-700" size={18} />
-            <div className="ml-1">Existing Connectors</div>
-          </div>
-        ),
-        link: "/admin/indexing/status",
-      },
-      {
-        name: (
-          <div className="flex">
-            <ConnectorIconSkeleton className="text-text-700" size={18} />
-            <div className="ml-1.5">Add Connector</div>
-          </div>
-        ),
-        link: "/admin/add-connector",
-      },
-    ],
+    items: connectors_items(),
   },
   {
     name: "Document Management",
-    items: [
-      {
-        name: (
-          <div className="flex">
-            <DocumentSetIconSkeleton className="text-text-700" size={18} />
-            <div className="ml-1">Document Sets</div>
-          </div>
-        ),
-        link: "/admin/documents/sets",
-      },
-      {
-        name: (
-          <div className="flex">
-            <ZoomInIconSkeleton className="text-text-700" size={18} />
-            <div className="ml-1">Explorer</div>
-          </div>
-        ),
-        link: "/admin/documents/explorer",
-      },
-      {
-        name: (
-          <div className="flex">
-            <ThumbsUpIconSkeleton className="text-text-700" size={18} />
-            <div className="ml-1">Feedback</div>
-          </div>
-        ),
-        link: "/admin/documents/feedback",
-      },
-    ],
+    items: document_management_items(),
   },
   {
     name: "Custom Assistants",
-    items: [
-      {
-        name: (
-          <div className="flex">
-            <AssistantsIconSkeleton className="text-text-700" size={18} />
-            <div className="ml-1">Assistants</div>
-          </div>
-        ),
-        link: "/admin/assistants",
-      },
-      ...(!isCurator
-        ? [
-            {
-              name: (
-                <div className="flex">
-                  <SlackIconSkeleton className="text-text-700" />
-                  <div className="ml-1">Slack Bots</div>
-                </div>
-              ),
-              link: "/admin/bots",
-            },
-            {
-              name: (
-                <div className="flex">
-                  <ToolIconSkeleton className="text-text-700" size={18} />
-                  <div className="ml-1">Actions</div>
-                </div>
-              ),
-              link: "/admin/actions",
-            },
-          ]
-        : []),
-      ...(enableEnterprise
-        ? [
-            {
-              name: (
-                <div className="flex">
-                  <ClipboardIcon className="text-text-700" size={18} />
-                  <div className="ml-1">Standard Answers</div>
-                </div>
-              ),
-              link: "/admin/standard-answer",
-            },
-          ]
-        : []),
-    ],
+    items: custom_assistants_items(isCurator, enableEnterprise),
   },
   ...(isCurator
     ? [
@@ -201,6 +220,19 @@ const collections = (
               ),
               link: "/admin/configuration/document-processing",
             },
+            ...(kgExposed
+              ? [
+                  {
+                    name: (
+                      <div className="flex">
+                        <BrainIcon className="text-text-700" />
+                        <div className="ml-1">Knowledge Graph</div>
+                      </div>
+                    ),
+                    link: "/admin/kg",
+                  },
+                ]
+              : []),
           ],
         },
         {
@@ -362,16 +394,30 @@ export function ClientLayout({
   enableEnterprise: boolean;
   enableCloud: boolean;
 }) {
+  const { kgExposed, isLoading } = useIsKGExposed();
+
   const isCurator =
     user?.role === UserRole.CURATOR || user?.role === UserRole.GLOBAL_CURATOR;
+
   const pathname = usePathname();
   const settings = useContext(SettingsContext);
   const [userSettingsOpen, setUserSettingsOpen] = useState(false);
   const toggleUserSettings = () => {
     setUserSettingsOpen(!userSettingsOpen);
   };
-  const { llmProviders } = useChatContext();
+  const { llmProviders, ccPairs } = useChatContext();
   const { popup, setPopup } = usePopup();
+
+  // Fetch federated-connector info so the modal can list/refresh them
+  const {
+    connectors: federatedConnectors,
+    refetch: refetchFederatedConnectors,
+  } = useFederatedOAuthStatus();
+
+  if (isLoading) {
+    return <></>;
+  }
+
   if (
     (pathname && pathname.startsWith("/admin/connectors")) ||
     (pathname && pathname.startsWith("/admin/embeddings"))
@@ -389,6 +435,9 @@ export function ClientLayout({
           setPopup={setPopup}
           onClose={() => setUserSettingsOpen(false)}
           defaultModel={user?.preferences?.default_model!}
+          ccPairs={ccPairs}
+          federatedConnectors={federatedConnectors}
+          refetchFederatedConnectors={refetchFederatedConnectors}
         />
       )}
 
@@ -416,7 +465,8 @@ export function ClientLayout({
             isCurator,
             enableCloud,
             enableEnterprise,
-            settings
+            settings,
+            kgExposed
           )}
         />
       </div>

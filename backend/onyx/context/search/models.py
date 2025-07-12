@@ -111,6 +111,11 @@ class BaseFilters(BaseModel):
     document_set: list[str] | None = None
     time_cutoff: datetime | None = None
     tags: list[Tag] | None = None
+    kg_entities: list[str] | None = None
+    kg_relationships: list[str] | None = None
+    kg_terms: list[str] | None = None
+    kg_sources: list[str] | None = None
+    kg_chunk_id_zero_only: bool | None = False
 
 
 class UserFileFilters(BaseModel):
@@ -149,6 +154,7 @@ class SearchRequest(ChunkContext):
     query: str
 
     expanded_queries: QueryExpansions | None = None
+    original_query: str | None = None
 
     search_type: SearchType = SearchType.SEMANTIC
 
@@ -200,6 +206,7 @@ class SearchQuery(ChunkContext):
     precomputed_query_embedding: Embedding | None = None
 
     expanded_queries: QueryExpansions | None = None
+    original_query: str | None
 
 
 class RetrievalDetails(ChunkContext):
@@ -246,6 +253,8 @@ class InferenceChunk(BaseChunk):
     primary_owners: list[str] | None = None
     secondary_owners: list[str] | None = None
     large_chunk_reference_ids: list[int] = Field(default_factory=list)
+
+    is_federated: bool = False
 
     @property
     def unique_id(self) -> str:

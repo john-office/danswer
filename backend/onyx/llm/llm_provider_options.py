@@ -3,6 +3,8 @@ from enum import Enum
 import litellm  # type: ignore
 from pydantic import BaseModel
 
+from onyx.llm.chat_llm import VERTEX_CREDENTIALS_FILE_KWARG
+from onyx.llm.chat_llm import VERTEX_LOCATION_KWARG
 from onyx.llm.utils import model_supports_image_input
 from onyx.server.manage.llm.models import ModelConfigurationView
 
@@ -24,6 +26,7 @@ class CustomConfigKey(BaseModel):
     is_required: bool = True
     is_secret: bool = False
     key_type: CustomConfigKeyType = CustomConfigKeyType.TEXT_INPUT
+    default_value: str | None = None
 
 
 class WellKnownLLMProviderDescriptor(BaseModel):
@@ -108,6 +111,7 @@ VERTEXAI_DEFAULT_MODEL = "gemini-2.0-flash"
 VERTEXAI_DEFAULT_FAST_MODEL = "gemini-2.0-flash-lite"
 VERTEXAI_MODEL_NAMES = [
     # 2.5 pro models
+    "gemini-2.5-pro-preview-06-05",
     "gemini-2.5-pro-preview-05-06",
     # 2.0 flash-lite models
     VERTEXAI_DEFAULT_FAST_MODEL,
@@ -120,15 +124,17 @@ VERTEXAI_MODEL_NAMES = [
     # "gemini-2.0-flash-exp-image-generation",
     # "gemini-2.0-flash-thinking-exp-01-21",
     # 1.5 pro models
-    "gemini-1.5-pro-latest",
     "gemini-1.5-pro",
     "gemini-1.5-pro-001",
     "gemini-1.5-pro-002",
     # 1.5 flash models
-    "gemini-1.5-flash-latest",
     "gemini-1.5-flash",
     "gemini-1.5-flash-001",
     "gemini-1.5-flash-002",
+    # Anthropic models
+    "claude-sonnet-4",
+    "claude-opus-4",
+    "claude-3-7-sonnet@20250219",
 ]
 VERTEXAI_VISIBLE_MODEL_NAMES = [
     VERTEXAI_DEFAULT_MODEL,
@@ -149,9 +155,6 @@ _PROVIDER_TO_VISIBLE_MODELS_MAP = {
     ANTHROPIC_PROVIDER_NAME: ANTHROPIC_VISIBLE_MODEL_NAMES,
     VERTEXAI_PROVIDER_NAME: VERTEXAI_VISIBLE_MODEL_NAMES,
 }
-
-
-CREDENTIALS_FILE_CUSTOM_CONFIG_KEY = "CREDENTIALS_FILE"
 
 
 def fetch_available_well_known_llms() -> list[WellKnownLLMProviderDescriptor]:
@@ -237,12 +240,22 @@ def fetch_available_well_known_llms() -> list[WellKnownLLMProviderDescriptor]:
             ),
             custom_config_keys=[
                 CustomConfigKey(
-                    name=CREDENTIALS_FILE_CUSTOM_CONFIG_KEY,
+                    name=VERTEX_CREDENTIALS_FILE_KWARG,
                     display_name="Credentials File",
                     description="This should be a JSON file containing some private credentials.",
                     is_required=True,
                     is_secret=False,
                     key_type=CustomConfigKeyType.FILE_INPUT,
+                ),
+                CustomConfigKey(
+                    name=VERTEX_LOCATION_KWARG,
+                    display_name="Location",
+                    description="The location of the Vertex AI model. Please refer to the "
+                    "[Vertex AI configuration docs](https://docs.onyx.app/gen_ai_configs/vertex_ai) for all possible values.",
+                    is_required=False,
+                    is_secret=False,
+                    key_type=CustomConfigKeyType.TEXT_INPUT,
+                    default_value="us-east1",
                 ),
             ],
             default_model=VERTEXAI_DEFAULT_MODEL,

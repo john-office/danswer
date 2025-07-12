@@ -330,6 +330,8 @@ def get_personas_for_user(
     include_slack_bot_personas: bool = False,
     include_deleted: bool = False,
     joinedload_all: bool = False,
+    # a bit jank
+    include_prompt: bool = True,
 ) -> Sequence[Persona]:
     stmt = select(Persona)
     stmt = _add_user_filters(stmt, user, get_editable)
@@ -343,7 +345,6 @@ def get_personas_for_user(
 
     if joinedload_all:
         stmt = stmt.options(
-            selectinload(Persona.prompts),
             selectinload(Persona.tools),
             selectinload(Persona.document_sets),
             selectinload(Persona.groups),
@@ -352,6 +353,8 @@ def get_personas_for_user(
             selectinload(Persona.user_files),
             selectinload(Persona.user_folders),
         )
+        if include_prompt:
+            stmt = stmt.options(selectinload(Persona.prompts))
 
     results = db_session.execute(stmt).scalars().all()
     return results
@@ -462,6 +465,13 @@ def upsert_persona(
         existing_persona = _get_persona_by_name(
             persona_name=name, user=user, db_session=db_session
         )
+
+        # Check for duplicate names when creating new personas
+        # Deleted personas are allowed to be overwritten
+        if existing_persona and not existing_persona.deleted:
+            raise ValueError(
+                f"Assistant with name '{name}' already exists. Please rename your assistant."
+            )
 
     if existing_persona:
         # this checks if the user has permission to edit the persona
